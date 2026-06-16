@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model JobApplication {
+  id                 String              @id @default(cuid())
+  companyName        String
+  jobTitle           String
+  jobLink            String?
+  location           String?
+  salaryRange        String?
+  employmentType     String?
+  careerCategory     String
+  sourcePlatform     String?
+  applicationDate    DateTime            @default(now())
+  status             String              @default("Applied")
+  contactPerson      String?
+  contactEmail       String?
+  notes              String?
+  nextFollowUpDate   DateTime?
+  closingDate        DateTime?
+  workArrangement    String?
+  keySkills          String[]
+  jobDescription     String?
+  coverLetterText    String?
+  coverLetterNotes   String?
+  resumeVersionId    String?
+  coverLetterVersionId String?
+  resumeVersion      ResumeVersion?      @relation(fields: [resumeVersionId], references: [id], onDelete: SetNull)
+  coverLetterVersion CoverLetterVersion? @relation(fields: [coverLetterVersionId], references: [id], onDelete: SetNull)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  @@index([status])
+  @@index([careerCategory])
+  @@index([applicationDate])
+  @@index([nextFollowUpDate])
+}
+
+model ResumeVersion {
+  id           String           @id @default(cuid())
+  name         String           @unique
+  notes        String?
+  applications JobApplication[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+model CoverLetterVersion {
+  id           String           @id @default(cuid())
+  name         String           @unique
+  notes        String?
+  applications JobApplication[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
