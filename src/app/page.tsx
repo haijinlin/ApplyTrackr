@@ -5,11 +5,12 @@ import { formatDate, percentage } from "@/lib/format";
 import { StatusBadge } from "@/components/status-badge";
 import { DatabaseSetup } from "@/components/database-setup";
 import { isDatabaseConfigured } from "@/lib/database";
+import { screenshotMode, syntheticApplications } from "@/lib/screenshot-data";
 
 export const dynamic = "force-dynamic";
 
 export default async function Dashboard() {
-  if (!isDatabaseConfigured) return <DatabaseSetup />;
+  if (!isDatabaseConfigured && !screenshotMode) return <DatabaseSetup />;
 
   const now = new Date();
   const weekStart = new Date(now);
@@ -19,7 +20,7 @@ export default async function Dashboard() {
   const followUpEnd = new Date(now);
   followUpEnd.setDate(now.getDate() + 14);
 
-  const [total, thisWeek, thisMonth, interviews, rejections, offers, recent, followUps] = await Promise.all([
+  const results = screenshotMode ? null : await Promise.all([
     prisma.jobApplication.count(),
     prisma.jobApplication.count({ where: { applicationDate: { gte: weekStart } } }),
     prisma.jobApplication.count({ where: { applicationDate: { gte: monthStart } } }),
@@ -33,6 +34,14 @@ export default async function Dashboard() {
       take: 5,
     }),
   ]);
+  const total = screenshotMode ? syntheticApplications.length : results![0];
+  const thisWeek = screenshotMode ? 2 : results![1];
+  const thisMonth = screenshotMode ? 4 : results![2];
+  const interviews = screenshotMode ? syntheticApplications.filter((x) => ["Interview", "Reference Check"].includes(x.status)).length : results![3];
+  const rejections = screenshotMode ? syntheticApplications.filter((x) => x.status === "Rejected").length : results![4];
+  const offers = screenshotMode ? syntheticApplications.filter((x) => x.status === "Offer").length : results![5];
+  const recent = screenshotMode ? syntheticApplications.slice(0, 5) : results![6];
+  const followUps = screenshotMode ? syntheticApplications.filter((x) => x.nextFollowUpDate).slice(0, 3) : results![7];
 
   const cards = [
     ["Total applications", total, "All tracked roles"],

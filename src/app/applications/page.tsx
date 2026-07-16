@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { CATEGORIES, SOURCE_PLATFORMS, STATUSES } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
 import { StatusBadge } from "@/components/status-badge";
+import { screenshotMode, syntheticApplications, syntheticResumes } from "@/lib/screenshot-data";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ type Search = { status?: string; category?: string; resume?: string; source?: st
 
 export default async function ApplicationsPage({ searchParams }: { searchParams: Promise<Search> }) {
   const query = await searchParams;
-  const resumes = await prisma.resumeVersion.findMany();
+  const resumes = screenshotMode ? syntheticResumes : await prisma.resumeVersion.findMany();
   const where: Prisma.JobApplicationWhereInput = {
     ...(query.status && { status: query.status }),
     ...(query.category && { careerCategory: query.category }),
@@ -24,7 +25,7 @@ export default async function ApplicationsPage({ searchParams }: { searchParams:
     query.sort === "followUp" ? { nextFollowUpDate: "asc" } :
     query.sort === "company" ? { companyName: "asc" } :
     query.sort === "status" ? { status: "asc" } : { applicationDate: "desc" };
-  const applications = await prisma.jobApplication.findMany({ where, orderBy, include: { resumeVersion: true } });
+  const applications = screenshotMode ? syntheticApplications : await prisma.jobApplication.findMany({ where, orderBy, include: { resumeVersion: true } });
 
   return (
     <div className="page">

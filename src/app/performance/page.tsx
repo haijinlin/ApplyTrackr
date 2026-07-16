@@ -1,14 +1,19 @@
 import { prisma } from "@/lib/prisma";
 import { percentage } from "@/lib/format";
 import { CATEGORIES } from "@/lib/constants";
+import { screenshotMode, syntheticApplications, syntheticResumes } from "@/lib/screenshot-data";
 
 export const dynamic = "force-dynamic";
 
 export default async function PerformancePage() {
-  const [resumes, applications] = await Promise.all([
+  const databaseResults = screenshotMode ? null : await Promise.all([
     prisma.resumeVersion.findMany({ include: { applications: { select: { status: true } } }, orderBy: { name: "asc" } }),
     prisma.jobApplication.findMany({ select: { careerCategory: true, status: true } }),
   ]);
+  const resumes = screenshotMode
+    ? syntheticResumes.map((resume) => ({ ...resume, applications: syntheticApplications.filter((item) => item.resumeVersionId === resume.id).map(({ status }) => ({ status })) }))
+    : databaseResults![0];
+  const applications = screenshotMode ? syntheticApplications : databaseResults![1];
   const resumeRows = resumes.map((resume) => {
     const total = resume.applications.length;
     const interviews = resume.applications.filter((x) => ["Interview", "Reference Check", "Offer"].includes(x.status)).length;

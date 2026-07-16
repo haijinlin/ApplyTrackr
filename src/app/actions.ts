@@ -4,6 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 
+function assertWritable() {
+  if (process.env.VERCEL !== "1" && process.env.SCREENSHOT_MODE === "true") {
+    throw new Error("Screenshot mode is read-only.");
+  }
+}
+
 const value = (formData: FormData, name: string) => {
   const result = formData.get(name)?.toString().trim();
   return result || null;
@@ -44,6 +50,7 @@ function applicationData(formData: FormData) {
 }
 
 export async function createApplication(formData: FormData) {
+  assertWritable();
   const application = await prisma.jobApplication.create({ data: applicationData(formData) });
   revalidatePath("/");
   revalidatePath("/applications");
@@ -51,6 +58,7 @@ export async function createApplication(formData: FormData) {
 }
 
 export async function updateApplication(id: string, formData: FormData) {
+  assertWritable();
   await prisma.jobApplication.update({ where: { id }, data: applicationData(formData) });
   revalidatePath("/");
   revalidatePath("/applications");
@@ -59,6 +67,7 @@ export async function updateApplication(id: string, formData: FormData) {
 }
 
 export async function deleteApplication(id: string) {
+  assertWritable();
   await prisma.jobApplication.delete({ where: { id } });
   revalidatePath("/");
   revalidatePath("/applications");
@@ -66,12 +75,14 @@ export async function deleteApplication(id: string) {
 }
 
 export async function createResumeVersion(formData: FormData) {
+  assertWritable();
   const name = value(formData, "name");
   if (name) await prisma.resumeVersion.create({ data: { name, notes: value(formData, "notes") } });
   revalidatePath("/versions");
 }
 
 export async function deleteResumeVersion(id: string) {
+  assertWritable();
   await prisma.resumeVersion.delete({ where: { id } });
   revalidatePath("/versions");
 }
